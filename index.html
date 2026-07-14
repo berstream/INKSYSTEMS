@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MKD2 · ระบบเบิกหมึกเครื่องปริ๊น</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f5f3ec; --card:#ffffff; --ink:#1c1b19; --grey:#6f6c65; --line:#e4e0d5;
+  --cyan:#0095b6; --magenta:#c4206e; --yellow:#c98f00; --green:#2e7d4f; --red:#c23a2b;
+  --cyan-bg:#e3f4f8; --magenta-bg:#fae7f0; --yellow-bg:#faf1d8; --green-bg:#e5f2ea; --red-bg:#fae6e3;
+  --radius:12px; --shadow:0 1px 3px rgba(28,27,25,.08),0 4px 14px rgba(28,27,25,.05);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Anuphan',sans-serif;background:var(--paper);color:var(--ink);
+  min-height:100vh;font-size:15px;
+  background-image:radial-gradient(rgba(28,27,25,.045) 1px,transparent 1px);
+  background-size:22px 22px}
+.mono{font-family:'JetBrains Mono',monospace}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+input,select,textarea{font-family:inherit;font-size:15px;width:100%;padding:11px 13px;
+  border:1.5px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);outline:none;
+  transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--ink)}
+label{display:block;font-size:12.5px;font-weight:600;color:var(--grey);
+  letter-spacing:.04em;margin:14px 0 6px;text-transform:uppercase}
+
+/* ---------- login ---------- */
+#loginView{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.login-card{background:var(--card);border:1.5px solid var(--ink);border-radius:16px;
+  padding:36px 32px;width:100%;max-width:400px;box-shadow:6px 6px 0 var(--ink)}
+.brand-dots{display:flex;gap:7px;margin-bottom:18px}
+.brand-dots span{width:13px;height:13px;border-radius:50%}
+.login-card h1{font-size:24px;font-weight:700;line-height:1.25}
+.login-card .sub{color:var(--grey);font-size:13.5px;margin-top:4px}
+.btn-primary{width:100%;background:var(--ink);color:#fff;font-weight:600;font-size:15.5px;
+  padding:13px;border-radius:10px;margin-top:22px;transition:transform .1s}
+.btn-primary:active{transform:scale(.98)}
+.btn-primary:disabled{opacity:.5;cursor:wait}
+
+/* ---------- app shell ---------- */
+#appView{display:none;max-width:1080px;margin:0 auto;padding:0 16px 90px}
+header.app{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:18px 2px 14px;border-bottom:2px solid var(--ink);margin-bottom:16px}
+header.app .title{font-weight:700;font-size:17px;display:flex;align-items:center;gap:10px}
+header.app .title .dots span{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:3px}
+.user-chip{font-size:13px;color:var(--grey);text-align:right;line-height:1.35}
+.user-chip b{color:var(--ink)}
+.link-btn{font-size:12.5px;color:var(--red);font-weight:600;text-decoration:underline}
+
+nav.tabs{display:flex;gap:6px;margin-bottom:18px;overflow-x:auto;padding-bottom:2px}
+nav.tabs button{white-space:nowrap;padding:9px 16px;border-radius:999px;font-weight:600;
+  font-size:14px;color:var(--grey);border:1.5px solid transparent}
+nav.tabs button.active{background:var(--ink);color:#fff}
+nav.tabs button:not(.active):hover{border-color:var(--line);background:#fff}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:20px;box-shadow:var(--shadow);margin-bottom:16px}
+.card h2{font-size:16px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.card .hint{font-size:13px;color:var(--grey)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}}
+
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;
+  padding:3px 10px;border-radius:999px;letter-spacing:.02em}
+.b-pending{background:var(--yellow-bg);color:var(--yellow)}
+.b-approved{background:var(--cyan-bg);color:var(--cyan)}
+.b-issued{background:var(--green-bg);color:var(--green)}
+.b-rejected{background:var(--red-bg);color:var(--red)}
+.b-cancelled{background:#eeece6;color:var(--grey)}
+
+.req-item{border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;
+  margin-bottom:10px;background:#fff}
+.req-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.req-id{font-size:12px;color:var(--grey)}
+.req-body{margin-top:8px;font-size:14.5px;line-height:1.55}
+.req-body b{font-weight:600}
+.req-meta{font-size:12.5px;color:var(--grey);margin-top:6px}
+.req-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.btn-sm{padding:7px 14px;border-radius:8px;font-weight:600;font-size:13px;border:1.5px solid var(--ink)}
+.btn-ok{background:var(--ink);color:#fff}
+.btn-ghost{background:#fff;color:var(--ink)}
+.btn-danger{background:#fff;color:var(--red);border-color:var(--red)}
+
+/* stock table */
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--grey);
+  text-align:left;padding:8px 10px;border-bottom:2px solid var(--ink)}
+td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr.low td{background:var(--red-bg)}
+.qty{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;
+  display:inline-block;min-width:46px;text-align:center;padding:3px 8px;border-radius:8px}
+.q-full{background:var(--cyan-bg);color:var(--cyan)}
+.q-empty{background:var(--yellow-bg);color:var(--yellow)}
+.q-refill{background:var(--magenta-bg);color:var(--magenta)}
+.low-flag{font-size:11px;color:var(--red);font-weight:700}
+.table-wrap{overflow-x:auto}
+
+.stock-note{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--grey);margin-top:12px}
+.stock-note i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:5px}
+
+.empty-state{text-align:center;color:var(--grey);padding:34px 10px;font-size:14px}
+.spinner{display:inline-block;width:16px;height:16px;border:2.5px solid var(--line);
+  border-top-color:var(--ink);border-radius:50%;animation:spin .7s linear infinite;vertical-align:-3px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+  background:var(--ink);color:#fff;padding:12px 22px;border-radius:10px;font-size:14px;
+  opacity:0;pointer-events:none;transition:all .25s;z-index:99;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.err{background:var(--red)}
+
+.refresh-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.refresh-row .stamp{font-size:12px;color:var(--grey)}
+.section-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--grey);margin:22px 0 8px}
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.filter-row select{width:auto;min-width:130px;padding:8px 12px;font-size:13.5px}
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="loginView">
+  <div class="login-card">
+    <div class="brand-dots">
+      <span style="background:var(--cyan)"></span><span style="background:var(--magenta)"></span>
+      <span style="background:var(--yellow)"></span><span style="background:var(--ink)"></span>
+    </div>
+    <h1>ระบบเบิกหมึกเครื่องปริ๊น</h1>
+    <div class="sub">MKD2 Wangnoi · WFDC / CDC / HDC</div>
+    <label>รหัสแผนก</label>
+    <input id="loginDept" class="mono" placeholder="เช่น INB, OUT, IT" style="text-transform:uppercase">
+    <label>รหัสผ่าน</label>
+    <input id="loginPass" type="password" placeholder="••••">
+    <button class="btn-primary" id="btnLogin" onclick="doLogin()">เข้าสู่ระบบ</button>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="appView">
+  <header class="app">
+    <div class="title">
+      <span class="dots">
+        <span style="background:var(--cyan)"></span><span style="background:var(--magenta)"></span><span style="background:var(--yellow)"></span><span style="background:var(--ink)"></span>
+      </span>
+      เบิกหมึกเครื่องปริ๊น
+    </div>
+    <div class="user-chip">
+      <b id="uName"></b> · <span id="uRole"></span><br>
+      <span id="uSite"></span> · <button class="link-btn" onclick="logout()">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabBar">
+    <button data-tab="request" class="active" onclick="switchTab('request')">✏️ เบิกหมึก</button>
+    <button data-tab="list" onclick="switchTab('list')">📋 คำขอ</button>
+    <button data-tab="stock" onclick="switchTab('stock')">📦 สต็อก</button>
+    <button data-tab="manage" id="tabManage" style="display:none" onclick="switchTab('manage')">⚙️ จัดการ</button>
+  </nav>
+
+  <!-- ---- TAB: request ---- -->
+  <section id="tab-request">
+    <div class="card">
+      <h2>สร้างคำขอเบิกหมึก</h2>
+      <div class="hint">เลือกเครื่องปริ๊นก่อน ระบบจะแสดงเฉพาะหมึกที่ใช้กับเครื่องนั้นได้</div>
+      <div class="filter-row" style="margin-top:14px">
+        <select id="fSite" onchange="renderPrinterSelect()"></select>
+        <select id="fDept" onchange="renderPrinterSelect()"></select>
+      </div>
+      <label>ชื่อผู้เบิก</label>
+      <input id="inRequester" placeholder="ชื่อ-นามสกุล ผู้ที่มาเบิก">
+      <label>เครื่องปริ๊น</label>
+      <select id="selPrinter" onchange="renderInkSelect()"></select>
+      <label>หมึกที่ต้องการเบิก</label>
+      <select id="selInk"></select>
+      <div class="grid2">
+        <div>
+          <label>จำนวน (ตลับ)</label>
+          <input id="inQty" class="mono" type="number" min="1" value="1">
+        </div>
+        <div>
+          <label>คืนตลับเก่า (Empty) กี่ตลับ</label>
+          <input id="inReturn" class="mono" type="number" min="0" value="0">
+        </div>
+      </div>
+      <label>เหตุผล / หมายเหตุ</label>
+      <textarea id="inReason" rows="2" placeholder="เช่น หมึกใกล้หมด งานพิมพ์เอกสารรับสินค้า"></textarea>
+      <button class="btn-primary" id="btnSubmit" onclick="submitRequest()">ส่งคำขอเบิก</button>
+    </div>
+  </section>
+
+  <!-- ---- TAB: list ---- -->
+  <section id="tab-list" style="display:none">
+    <div class="card">
+      <div class="refresh-row">
+        <h2>รายการคำขอ</h2>
+        <button class="btn-sm btn-ghost" onclick="loadRequests(true)">รีเฟรช</button>
+      </div>
+      <div class="filter-row">
+        <select id="fStatus" onchange="renderRequests()">
+          <option value="">ทุกสถานะ</option>
+          <option value="pending">รออนุมัติ</option>
+          <option value="approved">อนุมัติแล้ว</option>
+          <option value="issued">จ่ายของแล้ว</option>
+          <option value="rejected">ถูกปฏิเสธ</option>
+          <option value="cancelled">ยกเลิก</option>
+        </select>
+      </div>
+      <div id="reqList"><div class="empty-state"><span class="spinner"></span> กำลังโหลด...</div></div>
+    </div>
+  </section>
+
+  <!-- ---- TAB: stock ---- -->
+  <section id="tab-stock" style="display:none">
+    <div class="card">
+      <div class="refresh-row">
+        <h2>สต็อกหมึก (คลังกลาง)</h2>
+        <div>
+          <span class="stamp" id="stockStamp"></span>
+          <button class="btn-sm btn-ghost" onclick="loadStock(true)">รีเฟรช</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>รุ่นหมึก</th><th>สี</th>
+            <th>เต็ม</th><th>หมด (รอส่งเติม)</th><th>ส่งเติมอยู่</th><th>จุดสั่งซื้อ</th>
+          </tr></thead>
+          <tbody id="stockBody"></tbody>
+        </table>
+      </div>
+      <div class="stock-note">
+        <span><i style="background:var(--cyan)"></i>Full = พร้อมจ่าย</span>
+        <span><i style="background:var(--yellow)"></i>Empty = ตลับหมด รอส่งเติม</span>
+        <span><i style="background:var(--magenta)"></i>Refill = อยู่ระหว่างเติม</span>
+        <span style="color:var(--red)">แถวสีแดง = Full ต่ำกว่าจุดสั่งซื้อ</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---- TAB: manage (admin) ---- -->
+  <section id="tab-manage" style="display:none">
+    <div class="card">
+      <h2>บัญชีแผนก (สำหรับ login)</h2>
+      <div class="hint">เพิ่มแผนกใหม่ รีเซ็ตรหัสผ่าน หรือเปิด/ปิดการใช้งาน</div>
+      <div class="grid2">
+        <div><label>รหัสแผนก</label><input id="dpId" class="mono" placeholder="เช่น INB" style="text-transform:uppercase"></div>
+        <div><label>ชื่อแผนก</label><input id="dpName" placeholder="เช่น Inbound"></div>
+      </div>
+      <div class="grid2">
+        <div><label>Site</label>
+          <select id="dpSite"><option>WFDC</option><option>CDC</option><option>HDC</option></select>
+        </div>
+        <div><label>รหัสผ่าน</label><input id="dpPass" placeholder="รหัสผ่านเริ่มต้น"></div>
+      </div>
+      <button class="btn-primary" onclick="addDept()">เพิ่มแผนก</button>
+      <div class="section-title">แผนกทั้งหมด</div>
+      <div id="deptList"><div class="empty-state">กด "จัดการ" เพื่อโหลดรายชื่อแผนก</div></div>
+    </div>
+
+    <div class="card">
+      <h2>รับหมึกใหม่เข้าสต็อก</h2>
+      <div class="hint">เพิ่มจำนวน Full เมื่อได้รับของจากการสั่งซื้อ</div>
+      <label>รุ่นหมึก</label><select id="rsInk"></select>
+      <div class="grid2">
+        <div><label>จำนวน</label><input id="rsQty" class="mono" type="number" min="1" value="1"></div>
+        <div><label>เลขที่ PO / ใบส่งของ</label><input id="rsRef" placeholder="PO-2026-xxx"></div>
+      </div>
+      <button class="btn-primary" onclick="stockAction('receiveStock','rsInk','rsQty','rsRef')">บันทึกรับเข้า</button>
+    </div>
+
+    <div class="card">
+      <h2>ส่งตลับเปล่าไปเติม (Empty → Refill)</h2>
+      <label>รุ่นหมึก</label><select id="sfInk"></select>
+      <div class="grid2">
+        <div><label>จำนวน</label><input id="sfQty" class="mono" type="number" min="1" value="1"></div>
+        <div><label>อ้างอิง (ร้าน/เอกสาร)</label><input id="sfRef" placeholder="ร้านเติมหมึก ABC"></div>
+      </div>
+      <button class="btn-primary" onclick="stockAction('sendRefill','sfInk','sfQty','sfRef')">บันทึกส่งเติม</button>
+    </div>
+
+    <div class="card">
+      <h2>รับตลับกลับจากการเติม (Refill → Full)</h2>
+      <label>รุ่นหมึก</label><select id="rfInk"></select>
+      <div class="grid2">
+        <div><label>จำนวน</label><input id="rfQty" class="mono" type="number" min="1" value="1"></div>
+        <div><label>อ้างอิง</label><input id="rfRef"></div>
+      </div>
+      <button class="btn-primary" onclick="stockAction('receiveRefill','rfInk','rfQty','rfRef')">บันทึกรับกลับ</button>
+    </div>
+
+    <div class="card">
+      <h2>ตั้งจุดสั่งซื้อขั้นต่ำ (Reorder Point)</h2>
+      <label>รุ่นหมึก</label><select id="rpInk"></select>
+      <label>จุดสั่งซื้อ (เตือนเมื่อ Full ต่ำกว่าค่านี้)</label>
+      <input id="rpVal" class="mono" type="number" min="0" value="2">
+      <button class="btn-primary" onclick="setReorder()">บันทึก</button>
+    </div>
+  </section>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ================= CONFIG ================= */
+const API_URL = 'https://script.google.com/macros/s/AKfycbzPqWilU0rQuabvnUJfgk6e3Cmqt9KN3Sz2x1PE1X0S8Vr06S0mg3dLXgJjVJ8Tqv_ApQ/exec';
+const CACHE_KEY = 'ink_master_v1';
+const CACHE_TTL = 1000 * 60 * 30; // 30 นาที
+
+/* ================= STATE ================= */
+let USER = null;
+let MASTER = { printers: [], inks: [], mapping: [] };
+let STOCK = [];
+let REQUESTS = [];
+
+/* ================= API ================= */
+async function api(action, payload = {}) {
+  const body = Object.assign({ action }, payload);
+  if (USER) body.deptId = body.deptId || USER.deptId;
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // กัน CORS preflight
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+/* ================= TOAST ================= */
+let toastTimer;
+function toast(msg, isErr = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = isErr ? 'show err' : 'show';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => (t.className = ''), 3200);
+}
+
+/* ================= AUTH ================= */
+async function doLogin() {
+  const dept = document.getElementById('loginDept').value.trim().toUpperCase();
+  const pass = document.getElementById('loginPass').value.trim();
+  if (!dept || !pass) return toast('กรอกรหัสแผนกและรหัสผ่าน', true);
+  const btn = document.getElementById('btnLogin');
+  btn.disabled = true; btn.textContent = 'กำลังตรวจสอบ...';
+  try {
+    const r = await api('login', { deptId: dept, password: pass });
+    if (!r.success) return toast(r.message, true);
+    USER = r.user;
+    sessionStorage.setItem('ink_user', JSON.stringify(USER));
+    enterApp();
+  } catch (e) {
+    toast('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้', true);
+  } finally {
+    btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ';
+  }
+}
+function logout() {
+  sessionStorage.removeItem('ink_user');
+  location.reload();
+}
+
+/* ================= INIT / APP ================= */
+async function enterApp() {
+  document.getElementById('loginView').style.display = 'none';
+  document.getElementById('appView').style.display = 'block';
+  document.getElementById('uName').textContent = USER.deptName;
+  document.getElementById('uRole').textContent = USER.role === 'admin' ? 'IT Admin' : 'แผนก';
+  document.getElementById('uSite').textContent = USER.site;
+  if (USER.role === 'admin') document.getElementById('tabManage').style.display = '';
+  await loadMaster();
+  buildFilters();
+  renderPrinterSelect();
+  fillInkSelects();
+  loadStock();
+  loadRequests();
+}
+
+async function loadMaster(force = false) {
+  if (!force) {
+    try {
+      const c = JSON.parse(localStorage.getItem(CACHE_KEY));
+      if (c && Date.now() - c.t < CACHE_TTL) { MASTER = c.data; return; }
+    } catch (e) {}
+  }
+  const r = await api('getMasterData');
+  if (r.success) {
+    MASTER = { printers: r.printers, inks: r.inks, mapping: r.mapping };
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ t: Date.now(), data: MASTER }));
+  } else toast('โหลด master data ไม่สำเร็จ', true);
+}
+
+/* ================= TABS ================= */
+function switchTab(name) {
+  document.querySelectorAll('#tabBar button').forEach(b =>
+    b.classList.toggle('active', b.dataset.tab === name));
+  ['request', 'list', 'stock', 'manage'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === name ? '' : 'none';
+  });
+  if (name === 'stock') loadStock();
+  if (name === 'list') loadRequests();
+  if (name === 'manage') loadDepts();
+}
+
+/* ================= REQUEST FORM ================= */
+function buildFilters() {
+  const sites = [...new Set(MASTER.printers.map(p => p.site))].sort();
+  const depts = [...new Set(MASTER.printers.map(p => p.department))].sort();
+  const fS = document.getElementById('fSite');
+  const fD = document.getElementById('fDept');
+  fS.innerHTML = '<option value="">ทุก Site</option>' + sites.map(s => `<option>${s}</option>`).join('');
+  fD.innerHTML = '<option value="">ทุกแผนก</option>' + depts.map(d => `<option>${d}</option>`).join('');
+  if (sites.includes(USER.site)) fS.value = USER.site;
+  if (depts.includes(USER.deptName)) fD.value = USER.deptName;
+}
+
+function renderPrinterSelect() {
+  const site = document.getElementById('fSite').value;
+  const dept = document.getElementById('fDept').value;
+  const list = MASTER.printers.filter(p =>
+    (!site || p.site === site) && (!dept || p.department === dept));
+  const sel = document.getElementById('selPrinter');
+  sel.innerHTML = list.length
+    ? '<option value="">— เลือกเครื่องปริ๊น —</option>' + list.map(p =>
+        `<option value="${p.id}">${p.id} · ${p.brand} ${p.model} (${p.location})</option>`).join('')
+    : '<option value="">ไม่พบเครื่องปริ๊นตามเงื่อนไข</option>';
+  renderInkSelect();
+}
+
+function compatibleInks(printerId) {
+  const p = MASTER.printers.find(x => x.id === printerId);
+  if (!p) return [];
+  const ids = MASTER.mapping
+    .filter(m => m.brand === p.brand && m.model === p.model)
+    .map(m => m.inkId);
+  return MASTER.inks.filter(i => ids.includes(i.id));
+}
+
+function inkLabel(i) {
+  const colorName = { BK: 'ดำ', C: 'ฟ้า', M: 'ชมพู', Y: 'เหลือง' }[i.color] || '';
+  return `${i.id} · ${i.brand} ${i.model}${colorName ? ' · ' + colorName : ''}`;
+}
+
+function renderInkSelect() {
+  const pid = document.getElementById('selPrinter').value;
+  const inks = compatibleInks(pid);
+  const sel = document.getElementById('selInk');
+  sel.innerHTML = !pid ? '<option value="">— เลือกเครื่องก่อน —</option>'
+    : inks.length
+      ? inks.map(i => `<option value="${i.id}">${inkLabel(i)}</option>`).join('')
+      : '<option value="">รุ่นนี้ยังไม่มี mapping หมึก แจ้ง IT</option>';
+}
+
+async function submitRequest() {
+  const requesterName = document.getElementById('inRequester').value.trim();
+  const printerId = document.getElementById('selPrinter').value;
+  const inkId = document.getElementById('selInk').value;
+  const qty = Number(document.getElementById('inQty').value);
+  const returnEmptyQty = Number(document.getElementById('inReturn').value) || 0;
+  const reason = document.getElementById('inReason').value.trim();
+  if (!requesterName) return toast('ใส่ชื่อผู้เบิกก่อน', true);
+  if (!printerId || !inkId) return toast('เลือกเครื่องปริ๊นและหมึกก่อน', true);
+  if (!(qty > 0)) return toast('จำนวนต้องมากกว่า 0', true);
+  const btn = document.getElementById('btnSubmit');
+  btn.disabled = true; btn.textContent = 'กำลังส่ง...';
+  try {
+    const r = await api('submitRequest', { requesterName, printerId, inkId, qty, returnEmptyQty, reason });
+    if (r.success) {
+      toast('✓ ' + r.message + ' (' + r.requestId + ')');
+      document.getElementById('inQty').value = 1;
+      document.getElementById('inReturn').value = 0;
+      document.getElementById('inReason').value = '';
+      loadRequests(true);
+      switchTab('list');
+    } else toast(r.message, true);
+  } catch (e) { toast('ส่งไม่สำเร็จ ลองใหม่', true); }
+  finally { btn.disabled = false; btn.textContent = 'ส่งคำขอเบิก'; }
+}
+
+/* ================= REQUEST LIST ================= */
+async function loadRequests(force = false) {
+  if (!force && REQUESTS.length) { renderRequests(); return; }
+  const r = await api('getRequests');
+  if (r.success) { REQUESTS = r.requests; renderRequests(); }
+  else document.getElementById('reqList').innerHTML =
+    `<div class="empty-state">${r.message || 'โหลดไม่สำเร็จ'}</div>`;
+}
+
+const STATUS_TH = {
+  pending: ['รออนุมัติ', 'b-pending'], approved: ['อนุมัติแล้ว', 'b-approved'],
+  issued: ['จ่ายของแล้ว', 'b-issued'], rejected: ['ถูกปฏิเสธ', 'b-rejected'],
+  cancelled: ['ยกเลิก', 'b-cancelled']
+};
+
+function printerName(id) {
+  const p = MASTER.printers.find(x => x.id === id);
+  return p ? `${p.brand} ${p.model} (${id})` : id;
+}
+function inkName(id) {
+  const i = MASTER.inks.find(x => x.id === id);
+  return i ? inkLabel(i) : id;
+}
+
+function renderRequests() {
+  const f = document.getElementById('fStatus').value;
+  const list = REQUESTS.filter(r => !f || r.status === f);
+  const box = document.getElementById('reqList');
+  if (!list.length) { box.innerHTML = '<div class="empty-state">ไม่มีรายการ</div>'; return; }
+  const isAdmin = USER.role === 'admin';
+  box.innerHTML = list.map(r => {
+    const [txt, cls] = STATUS_TH[r.status] || [r.status, 'b-cancelled'];
+    let actions = '';
+    if (isAdmin) {
+      if (r.status === 'pending')
+        actions = `<button class="btn-sm btn-ok" onclick="reqAction('approveRequest','${r.id}')">✓ อนุมัติ (ตัดสต็อก)</button>
+                   <button class="btn-sm btn-danger" onclick="reqAction('rejectRequest','${r.id}',true)">ปฏิเสธ</button>`;
+      else if (r.status === 'approved')
+        actions = `<button class="btn-sm btn-ok" onclick="reqAction('issueRequest','${r.id}')">📦 จ่ายของแล้ว</button>
+                   <button class="btn-sm btn-danger" onclick="reqAction('cancelRequest','${r.id}',true)">ยกเลิก+คืนสต็อก</button>`;
+      else if (r.status === 'issued')
+        actions = `<button class="btn-sm btn-danger" onclick="reqAction('cancelRequest','${r.id}',true)">ยกเลิก+คืนสต็อก</button>`;
+    }
+    return `<div class="req-item">
+      <div class="req-top">
+        <span class="req-id mono">${r.id} · ${r.requestedAt}</span>
+        <span class="badge ${cls}">${txt}</span>
+      </div>
+      <div class="req-body">
+        <b>${r.requesterName}</b> (${r.deptName} · ${r.site})<br>
+        เครื่อง: ${printerName(r.printerId)}<br>
+        หมึก: ${inkName(r.inkId)} × <b class="mono">${r.qty}</b>
+        ${r.returnEmptyQty > 0 ? ` · คืนตลับเก่า <b class="mono">${r.returnEmptyQty}</b>` : ''}
+        ${r.reason ? `<br><span style="color:var(--grey)">“${r.reason}”</span>` : ''}
+      </div>
+      <div class="req-meta">
+        ${r.approvedAt ? 'ดำเนินการ: ' + r.approvedAt : ''}
+        ${r.issuedAt ? ' · จ่ายของ: ' + r.issuedAt : ''}
+        ${r.handledBy ? ' · โดย ' + r.handledBy : ''}
+        ${r.adminNote ? ' · หมายเหตุ: ' + r.adminNote : ''}
+      </div>
+      ${actions ? `<div class="req-actions">${actions}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+async function reqAction(action, requestId, askNote = false) {
+  let note = '';
+  if (askNote) {
+    note = prompt('หมายเหตุ (ถ้ามี):') ;
+    if (note === null) return;
+  }
+  const r = await api(action, { requestId, note });
+  toast(r.message, !r.success);
+  if (r.success) { await loadRequests(true); loadStock(true); }
+}
+
+/* ================= STOCK ================= */
+async function loadStock(force = false) {
+  const r = await api('getStock');
+  if (!r.success) return;
+  STOCK = r.stock;
+  document.getElementById('stockStamp').textContent = 'อัปเดต ' + r.updatedAt + ' ';
+  const body = document.getElementById('stockBody');
+  if (!STOCK.length) {
+    body.innerHTML = '<tr><td colspan="6" class="empty-state">ยังไม่มีข้อมูลสต็อก</td></tr>';
+    return;
+  }
+  body.innerHTML = STOCK.map(s => {
+    const ink = MASTER.inks.find(i => i.id === s.inkId) || {};
+    const low = s.reorderPoint > 0 && s.full < s.reorderPoint;
+    const colorName = { BK: 'ดำ', C: 'ฟ้า', M: 'ชมพู', Y: 'เหลือง' }[ink.color] || '-';
+    return `<tr class="${low ? 'low' : ''}">
+      <td><b>${s.inkId}</b><br><span style="font-size:12.5px;color:var(--grey)">${ink.brand || ''} ${ink.model || ''}</span></td>
+      <td>${colorName}</td>
+      <td><span class="qty q-full">${s.full}</span> ${low ? '<div class="low-flag">⚠ ต่ำกว่าจุดสั่งซื้อ</div>' : ''}</td>
+      <td><span class="qty q-empty">${s.empty}</span></td>
+      <td><span class="qty q-refill">${s.refill}</span></td>
+      <td class="mono">${s.reorderPoint}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ================= ADMIN MANAGE ================= */
+function fillInkSelects() {
+  const opts = MASTER.inks.map(i => `<option value="${i.id}">${inkLabel(i)}</option>`).join('');
+  ['rsInk', 'sfInk', 'rfInk', 'rpInk'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = opts;
+  });
+}
+
+async function stockAction(action, inkSel, qtySel, refSel) {
+  const inkId = document.getElementById(inkSel).value;
+  const qty = Number(document.getElementById(qtySel).value);
+  const ref = document.getElementById(refSel).value.trim();
+  if (!inkId || !(qty > 0)) return toast('เลือกหมึกและใส่จำนวนให้ถูกต้อง', true);
+  const r = await api(action, { inkId, qty, ref });
+  toast(r.message, !r.success);
+  if (r.success) loadStock(true);
+}
+
+async function setReorder() {
+  const inkId = document.getElementById('rpInk').value;
+  const reorderPoint = Number(document.getElementById('rpVal').value);
+  const r = await api('setReorderPoint', { inkId, reorderPoint });
+  toast(r.message, !r.success);
+  if (r.success) loadStock(true);
+}
+
+/* ================= DEPARTMENT ACCOUNTS (admin) ================= */
+async function loadDepts() {
+  if (USER.role !== 'admin') return;
+  const box = document.getElementById('deptList');
+  box.innerHTML = '<div class="empty-state"><span class="spinner"></span> กำลังโหลด...</div>';
+  const r = await api('listDepartments');
+  if (!r.success) { box.innerHTML = `<div class="empty-state">${r.message}</div>`; return; }
+  box.innerHTML = r.departments.map(d => `
+    <div class="req-item">
+      <div class="req-top">
+        <span><b class="mono">${d.deptId}</b> · ${d.deptName} · ${d.site}
+          ${d.role === 'admin' ? '<span class="badge b-approved">ADMIN</span>' : ''}
+        </span>
+        <span class="badge ${d.active ? 'b-issued' : 'b-cancelled'}">${d.active ? 'ใช้งาน' : 'ปิดอยู่'}</span>
+      </div>
+      <div class="req-actions">
+        <button class="btn-sm btn-ghost" onclick="resetDeptPass('${d.deptId}')">รีเซ็ตรหัสผ่าน</button>
+        ${d.role !== 'admin' ? `<button class="btn-sm ${d.active ? 'btn-danger' : 'btn-ok'}"
+          onclick="toggleDept('${d.deptId}',${d.active ? 'false' : 'true'})">
+          ${d.active ? 'ปิดการใช้งาน' : 'เปิดการใช้งาน'}</button>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+async function addDept() {
+  const newDeptId = document.getElementById('dpId').value.trim().toUpperCase();
+  const newDeptName = document.getElementById('dpName').value.trim();
+  const newSite = document.getElementById('dpSite').value;
+  const newPassword = document.getElementById('dpPass').value.trim();
+  if (!newDeptId || !newDeptName || !newPassword) return toast('กรอกข้อมูลแผนกให้ครบ', true);
+  const r = await api('addDepartment', { newDeptId, newDeptName, newSite, newPassword });
+  toast(r.message, !r.success);
+  if (r.success) {
+    document.getElementById('dpId').value = '';
+    document.getElementById('dpName').value = '';
+    document.getElementById('dpPass').value = '';
+    loadDepts();
+  }
+}
+
+async function resetDeptPass(targetDeptId) {
+  const newPassword = prompt('รหัสผ่านใหม่สำหรับ ' + targetDeptId + ':');
+  if (!newPassword || !newPassword.trim()) return;
+  const r = await api('updateDepartment', { targetDeptId, newPassword: newPassword.trim() });
+  toast(r.message, !r.success);
+}
+
+async function toggleDept(targetDeptId, active) {
+  const r = await api('updateDepartment', { targetDeptId, active: active === true || active === 'true' });
+  toast(r.message, !r.success);
+  if (r.success) loadDepts();
+}
+
+/* ================= BOOT ================= */
+(function boot() {
+  document.getElementById('loginPass').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+  const saved = sessionStorage.getItem('ink_user');
+  if (saved) { USER = JSON.parse(saved); enterApp(); }
+})();
+</script>
+</body>
+</html>
