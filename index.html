@@ -179,7 +179,10 @@ tr.low td{background:var(--red-bg)}
   <!-- ---- TAB: request ---- -->
   <section id="tab-request">
     <div class="card">
-      <h2>สร้างคำขอเบิกหมึก</h2>
+      <div class="refresh-row">
+        <h2>สร้างคำขอเบิกหมึก</h2>
+        <button class="btn-sm btn-ghost" id="btnRefreshMaster" onclick="manualRefreshMaster()">🔄 รีเฟรชข้อมูลเครื่อง/หมึก</button>
+      </div>
       <div class="hint">เลือกเครื่องปริ๊นก่อน ระบบจะแสดงเฉพาะหมึกที่ใช้กับเครื่องนั้นได้</div>
       <div class="filter-row" style="margin-top:14px">
         <select id="fSite" onchange="renderPrinterSelect()"></select>
@@ -489,6 +492,19 @@ async function loadMaster(force = false) {
 }
 
 /* ================= TABS ================= */
+async function manualRefreshMaster() {
+  const btn = document.getElementById('btnRefreshMaster');
+  btn.disabled = true; btn.textContent = '⏳ กำลังโหลด...';
+  try {
+    await refreshMasterCache();
+    toast('อัปเดตข้อมูลเครื่อง/หมึกล่าสุดแล้ว');
+  } catch (e) {
+    toast('รีเฟรชไม่สำเร็จ ลองใหม่', true);
+  } finally {
+    btn.disabled = false; btn.textContent = '🔄 รีเฟรชข้อมูลเครื่อง/หมึก';
+  }
+}
+
 function switchTab(name) {
   document.querySelectorAll('#tabBar button').forEach(b =>
     b.classList.toggle('active', b.dataset.tab === name));
