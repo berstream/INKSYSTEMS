@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CDC · ระบบเบิกหมึกเครื่องปริ๊น</title>
+<title>MKD2 · ระบบเบิกหมึกเครื่องปริ๊น</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
@@ -130,7 +130,7 @@ tr.low td{background:var(--red-bg)}
       <span style="background:var(--yellow)"></span><span style="background:var(--ink)"></span>
     </div>
     <h1>ระบบเบิกหมึกเครื่องปริ๊น</h1>
-    <div class="sub">CDC Wangnoi · CDC / HDC</div>
+    <div class="sub">MKD2 Wangnoi · WFDC / CDC / HDC</div>
     <label>รหัสแผนก</label>
     <input id="loginDept" class="mono" placeholder="เช่น INB, OUT, IT" style="text-transform:uppercase">
     <label>รหัสผ่าน</label>
@@ -259,6 +259,59 @@ tr.low td{background:var(--red-bg)}
       <button class="btn-primary" onclick="addDept()">เพิ่มแผนก</button>
       <div class="section-title">แผนกทั้งหมด</div>
       <div id="deptList"><div class="empty-state">กด "จัดการ" เพื่อโหลดรายชื่อแผนก</div></div>
+    </div>
+
+    <div class="card">
+      <h2>เครื่องปริ๊น</h2>
+      <div class="hint">เพิ่มเครื่องใหม่ / เปลี่ยนสถานะ (เครื่อง retired จะไม่ขึ้นในฟอร์มเบิก)</div>
+      <div class="grid2">
+        <div><label>รหัสเครื่อง</label><input id="prId" class="mono" placeholder="เช่น PRT-001" style="text-transform:uppercase"></div>
+        <div><label>Site</label><select id="prSite"><option>WFDC</option><option>CDC</option><option>HDC</option></select></div>
+      </div>
+      <div class="grid2">
+        <div><label>ยี่ห้อ</label><input id="prBrand" placeholder="เช่น HP"></div>
+        <div><label>รุ่น</label><input id="prModel" placeholder="เช่น LaserJet M404dn"></div>
+      </div>
+      <div class="grid2">
+        <div><label>แผนก</label><input id="prDept" placeholder="เช่น Inbound"></div>
+        <div><label>สถานที่ตั้ง</label><input id="prLoc" placeholder="เช่น ออฟฟิศชั้น 2 โซนรับสินค้า"></div>
+      </div>
+      <button class="btn-primary" onclick="addPrinterUI()">เพิ่มเครื่องปริ๊น</button>
+      <div class="section-title">เครื่องทั้งหมด</div>
+      <div id="printerList"><div class="empty-state">กำลังโหลด...</div></div>
+    </div>
+
+    <div class="card">
+      <h2>หมึก</h2>
+      <div class="hint">เพิ่มหมึกใหม่ / แก้ราคา / ปิดใช้งาน</div>
+      <div class="grid2">
+        <div><label>รหัสหมึก</label><input id="ikId" class="mono" placeholder="เช่น TNR-CF259A" style="text-transform:uppercase"></div>
+        <div><label>สี</label><select id="ikColor">
+          <option value="BK">ดำ (BK)</option><option value="C">ฟ้า (C)</option>
+          <option value="M">ชมพู (M)</option><option value="Y">เหลือง (Y)</option>
+          <option value="-">- ไม่ระบุ</option></select></div>
+      </div>
+      <div class="grid2">
+        <div><label>ยี่ห้อ</label><input id="ikBrand" placeholder="เช่น HP"></div>
+        <div><label>รุ่น</label><input id="ikModel" placeholder="เช่น 59A (CF259A)"></div>
+      </div>
+      <div class="grid2">
+        <div><label>ราคาซื้อใหม่ (บาท)</label><input id="ikPrice" class="mono" type="number" min="0" value="0"></div>
+        <div><label>ราคา Refill (บาท)</label><input id="ikRefill" class="mono" type="number" min="0" value="0"></div>
+      </div>
+      <button class="btn-primary" onclick="addInkUI()">เพิ่มหมึก</button>
+      <div class="section-title">หมึกทั้งหมด</div>
+      <div id="inkList"><div class="empty-state">กำลังโหลด...</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Mapping เครื่อง ↔ หมึก</h2>
+      <div class="hint">ผูกว่าเครื่องรุ่นไหนใช้หมึกอะไรได้ (1 รุ่นผูกได้หลายหมึก)</div>
+      <label>รุ่นเครื่อง</label><select id="mpModel"></select>
+      <label>หมึก</label><select id="mpInk"></select>
+      <button class="btn-primary" onclick="addMappingUI()">ผูก Mapping</button>
+      <div class="section-title">Mapping ทั้งหมด</div>
+      <div id="mapList"><div class="empty-state">กำลังโหลด...</div></div>
     </div>
 
     <div class="card">
@@ -401,7 +454,7 @@ function switchTab(name) {
   });
   if (name === 'stock') loadStock();
   if (name === 'list') loadRequests();
-  if (name === 'manage') loadDepts();
+  if (name === 'manage') { loadDepts(); loadMasterAdmin(); }
 }
 
 /* ================= REQUEST FORM ================= */
@@ -660,6 +713,176 @@ async function toggleDept(targetDeptId, active) {
   const r = await api('updateDepartment', { targetDeptId, active: active === true || active === 'true' });
   toast(r.message, !r.success);
   if (r.success) loadDepts();
+}
+
+/* ================= MASTER DATA MANAGEMENT (admin) ================= */
+let ADMIN_PRINTERS = [], ADMIN_INKS = [];
+
+/** ล้าง cache + โหลด master ใหม่ทันที ให้ฟอร์มเบิกเห็นของใหม่เลย */
+async function refreshMasterCache() {
+  localStorage.removeItem(CACHE_KEY);
+  await loadMaster(true);
+  buildFilters();
+  renderPrinterSelect();
+  fillInkSelects();
+}
+
+async function loadMasterAdmin() {
+  if (USER.role !== 'admin') return;
+  const [rp, ri] = await Promise.all([api('listAllPrinters'), api('listAllInks')]);
+  if (rp.success) { ADMIN_PRINTERS = rp.printers; renderPrinterList(); }
+  if (ri.success) { ADMIN_INKS = ri.inks; renderInkList(); }
+  renderMappingUI();
+}
+
+/* ---- printers ---- */
+const PR_STATUS = { active: ['ใช้งาน', 'b-issued'], broken: ['เสีย', 'b-pending'], retired: ['ปลดระวาง', 'b-cancelled'] };
+
+function renderPrinterList() {
+  const box = document.getElementById('printerList');
+  if (!ADMIN_PRINTERS.length) { box.innerHTML = '<div class="empty-state">ยังไม่มีเครื่อง</div>'; return; }
+  box.innerHTML = ADMIN_PRINTERS.map(p => {
+    const [txt, cls] = PR_STATUS[p.status] || [p.status, 'b-cancelled'];
+    return `<div class="req-item">
+      <div class="req-top">
+        <span><b class="mono">${p.id}</b> · ${p.brand} ${p.model}<br>
+          <span style="font-size:12.5px;color:var(--grey)">${p.site} · ${p.department || '-'} · 📍 ${p.location || '-'}</span></span>
+        <span class="badge ${cls}">${txt}</span>
+      </div>
+      <div class="req-actions">
+        ${p.status !== 'active' ? `<button class="btn-sm btn-ok" onclick="setPrinterStatus('${p.id}','active')">ใช้งาน</button>` : ''}
+        ${p.status !== 'broken' ? `<button class="btn-sm btn-ghost" onclick="setPrinterStatus('${p.id}','broken')">เสีย</button>` : ''}
+        ${p.status !== 'retired' ? `<button class="btn-sm btn-danger" onclick="setPrinterStatus('${p.id}','retired')">ปลดระวาง</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function addPrinterUI() {
+  const printerId = document.getElementById('prId').value.trim().toUpperCase();
+  const brand = document.getElementById('prBrand').value.trim();
+  const model = document.getElementById('prModel').value.trim();
+  const site = document.getElementById('prSite').value;
+  const department = document.getElementById('prDept').value.trim();
+  const location = document.getElementById('prLoc').value.trim();
+  if (!printerId || !brand || !model || !location) return toast('กรอก รหัส/ยี่ห้อ/รุ่น/สถานที่ตั้ง ให้ครบ', true);
+  const r = await api('addPrinter', { printerId, brand, model, site, department, location });
+  toast(r.message, !r.success);
+  if (r.success) {
+    ['prId', 'prBrand', 'prModel', 'prDept', 'prLoc'].forEach(id => document.getElementById(id).value = '');
+    await refreshMasterCache();
+    loadMasterAdmin();
+  }
+}
+
+async function setPrinterStatus(printerId, status) {
+  const r = await api('updatePrinterStatus', { printerId, status });
+  toast(r.message, !r.success);
+  if (r.success) { await refreshMasterCache(); loadMasterAdmin(); }
+}
+
+/* ---- inks ---- */
+function renderInkList() {
+  const box = document.getElementById('inkList');
+  if (!ADMIN_INKS.length) { box.innerHTML = '<div class="empty-state">ยังไม่มีหมึก</div>'; return; }
+  const colorName = { BK: 'ดำ', C: 'ฟ้า', M: 'ชมพู', Y: 'เหลือง' };
+  box.innerHTML = ADMIN_INKS.map(i => `<div class="req-item">
+      <div class="req-top">
+        <span><b class="mono">${i.id}</b> · ${i.brand} ${i.model} · ${colorName[i.color] || '-'}<br>
+          <span style="font-size:12.5px;color:var(--grey)">ซื้อใหม่ ${i.unitPrice} ฿ · Refill ${i.refillPrice} ฿</span></span>
+        <span class="badge ${i.active ? 'b-issued' : 'b-cancelled'}">${i.active ? 'ใช้งาน' : 'ปิดอยู่'}</span>
+      </div>
+      <div class="req-actions">
+        <button class="btn-sm btn-ghost" onclick="editInkPrices('${i.id}',${i.unitPrice},${i.refillPrice})">แก้ราคา</button>
+        <button class="btn-sm ${i.active ? 'btn-danger' : 'btn-ok'}"
+          onclick="toggleInk('${i.id}',${i.active ? 'false' : 'true'})">${i.active ? 'ปิดใช้งาน' : 'เปิดใช้งาน'}</button>
+      </div>
+    </div>`).join('');
+}
+
+async function addInkUI() {
+  const inkId = document.getElementById('ikId').value.trim().toUpperCase();
+  const brand = document.getElementById('ikBrand').value.trim();
+  const model = document.getElementById('ikModel').value.trim();
+  const color = document.getElementById('ikColor').value;
+  const unitPrice = Number(document.getElementById('ikPrice').value) || 0;
+  const refillPrice = Number(document.getElementById('ikRefill').value) || 0;
+  if (!inkId || !brand || !model) return toast('กรอก รหัส/ยี่ห้อ/รุ่น ให้ครบ', true);
+  const r = await api('addInk', { inkId, brand, model, color, unitPrice, refillPrice });
+  toast(r.message, !r.success);
+  if (r.success) {
+    ['ikId', 'ikBrand', 'ikModel'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('ikPrice').value = 0;
+    document.getElementById('ikRefill').value = 0;
+    await refreshMasterCache();
+    loadMasterAdmin();
+  }
+}
+
+async function editInkPrices(inkId, curUnit, curRefill) {
+  const unitPrice = prompt('ราคาซื้อใหม่ (บาท) ของ ' + inkId + ':', curUnit);
+  if (unitPrice === null) return;
+  const refillPrice = prompt('ราคา Refill (บาท):', curRefill);
+  if (refillPrice === null) return;
+  const r = await api('updateInk', { inkId, unitPrice: Number(unitPrice) || 0, refillPrice: Number(refillPrice) || 0 });
+  toast(r.message, !r.success);
+  if (r.success) { await refreshMasterCache(); loadMasterAdmin(); }
+}
+
+async function toggleInk(inkId, active) {
+  const r = await api('updateInk', { inkId, active: active === true || active === 'true' });
+  toast(r.message, !r.success);
+  if (r.success) { await refreshMasterCache(); loadMasterAdmin(); }
+}
+
+/* ---- mapping ---- */
+function renderMappingUI() {
+  // dropdown รุ่นเครื่อง: distinct brand|model จากเครื่องทั้งหมด
+  const models = [...new Map(ADMIN_PRINTERS.map(p => [p.brand + '|' + p.model, p])).values()];
+  document.getElementById('mpModel').innerHTML = models.length
+    ? models.map(p => `<option value="${p.brand}|${p.model}">${p.brand} ${p.model}</option>`).join('')
+    : '<option value="">— เพิ่มเครื่องก่อน —</option>';
+  document.getElementById('mpInk').innerHTML = ADMIN_INKS.filter(i => i.active).length
+    ? ADMIN_INKS.filter(i => i.active).map(i => `<option value="${i.id}">${inkLabel(i)}</option>`).join('')
+    : '<option value="">— เพิ่มหมึกก่อน —</option>';
+  renderMapList();
+}
+
+function renderMapList() {
+  const box = document.getElementById('mapList');
+  const maps = MASTER.mapping;
+  if (!maps.length) { box.innerHTML = '<div class="empty-state">ยังไม่มี mapping</div>'; return; }
+  // จัดกลุ่มตามรุ่นเครื่อง
+  const groups = {};
+  maps.forEach(m => {
+    const k = m.brand + ' ' + m.model;
+    (groups[k] = groups[k] || []).push(m);
+  });
+  box.innerHTML = Object.keys(groups).map(k => `<div class="req-item">
+      <b>${k}</b>
+      <div class="req-actions">
+        ${groups[k].map(m => `<button class="btn-sm btn-ghost"
+          onclick="removeMappingUI('${m.brand}','${m.model}','${m.inkId}')"
+          title="กดเพื่อลบ">${inkName(m.inkId)} ✕</button>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+async function addMappingUI() {
+  const mv = document.getElementById('mpModel').value;
+  const inkId = document.getElementById('mpInk').value;
+  if (!mv || !inkId) return toast('เลือกรุ่นเครื่องและหมึกก่อน', true);
+  const [brand, model] = mv.split('|');
+  const r = await api('addMapping', { brand, model, inkId });
+  toast(r.message, !r.success);
+  if (r.success) { await refreshMasterCache(); renderMapList(); }
+}
+
+async function removeMappingUI(brand, model, inkId) {
+  if (!confirm('ลบ mapping: ' + brand + ' ' + model + ' ↔ ' + inkId + ' ?')) return;
+  const r = await api('removeMapping', { brand, model, inkId });
+  toast(r.message, !r.success);
+  if (r.success) { await refreshMasterCache(); renderMapList(); }
 }
 
 /* ================= BOOT ================= */
